@@ -20,6 +20,8 @@
     <Folder Include="Controllers/" />
     <Folder Include="Data/" />
     <Folder Include="Dtos/" />
+    <Folder Include="Dtos/Auth/" />
+    <Folder Include="Dtos/Rosters/" />
     <Folder Include="Models/" />
     <Folder Include="Security/" />
     <Folder Include="Utils/" />

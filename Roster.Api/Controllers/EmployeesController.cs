@@ -17,13 +17,11 @@ public class EmployeesController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly UserManager<ApplicationUser> _users;
-    private readonly IAntiforgery _antiforgery;
 
-    public EmployeesController(AppDbContext db, UserManager<ApplicationUser> users, IAntiforgery antiforgery)
+    public EmployeesController(AppDbContext db, UserManager<ApplicationUser> users)
     {
         _db = db;
         _users = users;
-        _antiforgery = antiforgery;
     }
 
     // ---------- Read endpoints ----------

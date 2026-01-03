@@ -13,6 +13,9 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<PingRow> PingRows => Set<PingRow>();
     public DbSet<Store> Stores => Set<Store>();
     public DbSet<Employee> Employees => Set<Employee>();
+    public DbSet<RosterDay> RosterDays => Set<RosterDay>();
+    public DbSet<Shift> Shifts => Set<Shift>();
+
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -42,6 +45,30 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
 
             e.HasIndex(x => new { x.StoreId, x.IsActive });
         });
+
+        builder.Entity<RosterDay>(e =>
+        {
+            e.Property(x => x.Date).HasColumnType("date");
+
+            // one roster per store per date
+            e.HasIndex(x => new { x.StoreId, x.Date }).IsUnique();
+
+            e.HasMany(x => x.Shifts)
+            .WithOne(x => x.RosterDay!)
+            .HasForeignKey(x => x.RosterDayId)
+            .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<Shift>(e =>
+        {
+            e.Property(x => x.ExternalShiftId).IsRequired().HasMaxLength(80);
+
+            // prevent duplicates from the same day
+            e.HasIndex(x => new { x.RosterDayId, x.ExternalShiftId }).IsUnique();
+
+            e.HasIndex(x => x.EmployeeId);
+        });
+
 
     }
 
