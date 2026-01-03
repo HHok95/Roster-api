@@ -80,12 +80,26 @@ app.Run();
 static async Task SeedAuthAsync(WebApplication app)
 {
     using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     var roleMgr = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     var userMgr = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
+    await db.Database.MigrateAsync();
+
+    // Seed store
+    var store = await db.Stores.FirstOrDefaultAsync(s => s.Code == "1001");
+    if (store is null)
+    {
+        store = new Store { Code = "1001", Name = "Demo Store 1001" };
+        db.Stores.Add(store);
+        await db.SaveChangesAsync();
+    }
+
+    // Seed role
     if (!await roleMgr.RoleExistsAsync("Manager"))
         await roleMgr.CreateAsync(new IdentityRole("Manager"));
 
+    // Seed manager user with Real storeId
     var user = await userMgr.FindByNameAsync("manager");
     if (user is null)
     {
@@ -93,7 +107,7 @@ static async Task SeedAuthAsync(WebApplication app)
         {
             UserName = "manager",
             Email = "manager@demo.local",
-            StoreId = Guid.Parse("11111111-1111-1111-1111-111111111111")
+            StoreId = store.Id
         };
 
         var result = await userMgr.CreateAsync(user, "Password123!");
@@ -101,6 +115,19 @@ static async Task SeedAuthAsync(WebApplication app)
         {
             await userMgr.AddToRoleAsync(user, "Manager");
         }
+    }
+    else
+    {
+        // if user already exists from earlier runs, ensure StoreId is correct
+        if (user.StoreId != store.Id)
+        {
+            user.StoreId = store.Id;
+            await userMgr.UpdateAsync(user);
+        }
+
+        // ensure role exists
+        if (!await userMgr.IsInRoleAsync(user, "Manager"))
+            await userMgr.AddToRoleAsync(user, "Manager");
     }
 
 }

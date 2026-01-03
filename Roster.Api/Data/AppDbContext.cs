@@ -11,6 +11,16 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
 
     }
     public DbSet<PingRow> PingRows => Set<PingRow>();
+    public DbSet<Store> Stores => Set<Store>();
+
+    protected override void OnModelCreating(ModelBuilder builder)
+    {
+        base.OnModelCreating(builder);
+
+        builder.Entity<Store>()
+            .HasIndex(s => s.Code)
+            .IsUnique();
+    }
 
 }
 
