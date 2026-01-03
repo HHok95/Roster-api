@@ -61,12 +61,17 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
 
         builder.Entity<Shift>(e =>
         {
-            e.Property(x => x.ExternalShiftId).IsRequired().HasMaxLength(80);
+            e.Property(x => x.ExternalShiftId)
+                .IsRequired()
+                .HasMaxLength(80);
 
-            // prevent duplicates from the same day
-            e.HasIndex(x => new { x.RosterDayId, x.ExternalShiftId }).IsUnique();
+            // prevent duplicate shifts from the same day (frontend id)
+            e.HasIndex(x => new { x.RosterDayId, x.ExternalShiftId })
+                .IsUnique();
 
-            e.HasIndex(x => x.EmployeeId);
+            // NEW: prevent multiple shifts for same employee on the same roster day
+            e.HasIndex(x => new { x.RosterDayId, x.EmployeeId })
+                .IsUnique();
         });
 
 

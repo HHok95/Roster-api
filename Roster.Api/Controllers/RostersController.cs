@@ -1,12 +1,14 @@
 using System.Text.Json;
-using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Roster.Api.Data;
 using Roster.Api.Dtos.Rosters;
 using Roster.Api.Models;
+using Roster.Api.Security;
+using Roster.Api.Services;
 using Roster.Api.Utils;
 
 namespace Roster.Api.Controllers;
@@ -21,11 +23,13 @@ public class RostersController : ControllerBase
 
     private readonly AppDbContext _db;
     private readonly UserManager<ApplicationUser> _users;
+    private readonly RosterService _rosterService;
 
-    public RostersController(AppDbContext db, UserManager<ApplicationUser> users)
+    public RostersController(AppDbContext db, UserManager<ApplicationUser> users, RosterService rosterService)
     {
         _db = db;
         _users = users;
+        _rosterService = rosterService;
     }
 
     [HttpGet("{date}")]
@@ -77,4 +81,21 @@ public class RostersController : ControllerBase
         return Ok(response);
     }
 
+    [HttpPut("{date}")]
+    [Authorize(Roles = "Manager")]
+    [ValidateCsrf]
+    public async Task<IActionResult> SaveByDate(string date, [FromBody] SaveRosterRequest req)
+    {
+        if (!DateOnly.TryParse(date, out var d))
+            return BadRequest(new { message = "Invalid date. Use YYYY-MM-DD." });
+
+        var user = await CurrentUser.GetAsync(_users, User);
+        if (user is null) return Unauthorized();
+
+        var (ok, status, body) = await _rosterService.SaveRosterAsync(user.StoreId, d, req);
+        return StatusCode(status, body);
+    }
+
 }
+
+

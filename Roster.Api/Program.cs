@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Roster.Api.Data;
 using Roster.Api.Models;
 using Roster.Api.Security;
+using Roster.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -60,6 +61,9 @@ builder.Services.AddAntiforgery(options =>
 });
 
 builder.Services.AddScoped<ValidateCsrfFilter>();
+
+builder.Services.AddScoped<RosterService>();
+
 
 var app = builder.Build();
 
