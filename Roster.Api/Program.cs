@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Roster.Api.Data;
 using Roster.Api.Models;
+using Roster.Api.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -58,6 +59,7 @@ builder.Services.AddAntiforgery(options =>
     options.HeaderName = "X-XSRF-TOKEN"; // header you must send on writes
 });
 
+builder.Services.AddScoped<ValidateCsrfFilter>();
 
 var app = builder.Build();
 

@@ -12,6 +12,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     }
     public DbSet<PingRow> PingRows => Set<PingRow>();
     public DbSet<Store> Stores => Set<Store>();
+    public DbSet<Employee> Employees => Set<Employee>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -32,6 +33,16 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
                 "LEN([Code]) = 4 AND [Code] NOT LIKE '%[^0-9]%'"
             ));
         });
+
+        builder.Entity<Employee>(e =>
+        {
+            // DataAnnotations handle required + length for DisplayName,
+            // but we still want the StoreId index for performance.
+            e.HasIndex(x => x.StoreId);
+
+            e.HasIndex(x => new { x.StoreId, x.IsActive });
+        });
+
     }
 
 }

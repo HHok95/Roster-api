@@ -21,6 +21,8 @@
     <Folder Include="Data/" />
     <Folder Include="Dtos/" />
     <Folder Include="Models/" />
+    <Folder Include="Security/" />
+    <Folder Include="Utils/" />
   </ItemGroup>
 
 </Project>
