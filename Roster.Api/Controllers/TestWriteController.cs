@@ -15,7 +15,14 @@ public class TestWriteController : ControllerBase
     [Authorize(Roles = "Manager")]
     public async Task<IActionResult> Write()
     {
-        await _antiforgery.ValidateRequestAsync(HttpContext); // CSRF check
+        try
+        {
+            await _antiforgery.ValidateRequestAsync(HttpContext); // CSRF check
+        }
+        catch (AntiforgeryValidationException)
+        {
+            return BadRequest(new { messsage = "Invalid CSRF token" });
+        }
         return Ok(new { ok = true });
     }
 }
