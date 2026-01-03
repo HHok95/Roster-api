@@ -17,9 +17,21 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     {
         base.OnModelCreating(builder);
 
-        builder.Entity<Store>()
-            .HasIndex(s => s.Code)
-            .IsUnique();
+        builder.Entity<Store>(e =>
+        {
+            e.Property(s => s.Code)
+                .IsRequired()
+                .HasMaxLength(4)
+                .IsUnicode(false);
+
+            e.HasIndex(s => s.Code).IsUnique();
+
+            // SQL Server CHECK constraint: exactly 4 digits
+            e.ToTable(t => t.HasCheckConstraint(
+                "CK_Store_Code_4Digits",
+                "LEN([Code]) = 4 AND [Code] NOT LIKE '%[^0-9]%'"
+            ));
+        });
     }
 
 }
