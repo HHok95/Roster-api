@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Roster.Api.Data;
@@ -46,6 +47,18 @@ builder.Services.ConfigureApplicationCookie(opt =>
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddAntiforgery(options =>
+{
+    options.Cookie.Name = "XSRF-TOKEN";
+    options.Cookie.HttpOnly = false; // so frontend/Swagger can read it
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+        ? CookieSecurePolicy.SameAsRequest
+        : CookieSecurePolicy.Always;
+    options.HeaderName = "X-XSRF-TOKEN"; // header you must send on writes
+});
+
+
 var app = builder.Build();
 
 // testing db
@@ -69,6 +82,12 @@ app.UseHttpsRedirection();
 // Auth middleware
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapGet("api/auth/csrf", (IAntiforgery antiforgery, HttpContext ctx) =>
+{
+    var tokens = antiforgery.GetAndStoreTokens(ctx);
+    return Results.Ok(new { token = tokens.RequestToken });
+});
 
 // Map controllers
 app.MapControllers();
