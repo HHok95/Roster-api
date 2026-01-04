@@ -8,8 +8,8 @@ public sealed record RosterShiftResponseDto(
     Guid EmployeeId,
     int StartSlot,
     int EndSlot,
-    object Breaks,
-    object Roles
+    List<BreakDto> Breaks,
+    List<RoleDto> Roles
 );
 
 public sealed record RosterResponseDto(

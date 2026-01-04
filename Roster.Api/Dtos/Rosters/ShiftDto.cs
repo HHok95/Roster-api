@@ -10,5 +10,5 @@ public sealed record ShiftDto(
     [Range(1, 56)] int EndSlot,
 
     List<BreakDto>? Breaks,
-    List<RoleSlotDto>? Roles
+    List<RoleDto>? Roles
 );

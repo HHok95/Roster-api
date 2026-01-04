@@ -9,27 +9,67 @@ public sealed class SaveRosterRequest : IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        foreach (var s in Shifts)
+        for (var i = 0; i < Shifts.Count; i++)
         {
+            var s = Shifts[i];
+
             if (s.EndSlot <= s.StartSlot)
+            {
                 yield return new ValidationResult(
-                    "EndSlot must be greater than StartSlot.",
+                    $"Shift[{i}] EndSlot must be greater than StartSlot.",
                     new[] { nameof(Shifts) }
                 );
+            }
 
+            // Break validation
             if (s.Breaks is not null)
             {
-                foreach (var b in s.Breaks)
+                for (var j = 0; j < s.Breaks.Count; j++)
                 {
+                    var b = s.Breaks[j];
+
                     if (b.End <= b.Start)
-                        yield return new ValidationResult("Break End must be greater than Start.");
+                        yield return new ValidationResult($"Shift[{i}] Break[{j}] End must be greater than Start.");
 
                     if (b.Start < s.StartSlot || b.End > s.EndSlot)
-                        yield return new ValidationResult("Break must be inside the shift range.");
+                        yield return new ValidationResult($"Shift[{i}] Break[{j}] must be inside the shift range.");
+                }
+            }
+
+            // NEW: Role segments validation (Option A)
+            if (s.Roles is not null && s.Roles.Count > 0)
+            {
+                // basic segment checks
+                for (var j = 0; j < s.Roles.Count; j++)
+                {
+                    var r = s.Roles[j];
+
+                    if (r.EndSlot <= r.StartSlot)
+                        yield return new ValidationResult($"Shift[{i}] Role[{j}] EndSlot must be greater than StartSlot.");
+
+                    if (r.StartSlot < s.StartSlot || r.EndSlot > s.EndSlot)
+                        yield return new ValidationResult($"Shift[{i}] Role[{j}] must be inside the shift range.");
+                }
+
+                // overlap check (sort by StartSlot, then compare)
+                var ordered = s.Roles
+                    .OrderBy(x => x.StartSlot)
+                    .ThenBy(x => x.EndSlot)
+                    .ToList();
+
+                for (var k = 1; k < ordered.Count; k++)
+                {
+                    var prev = ordered[k - 1];
+                    var curr = ordered[k];
+
+                    // overlap if current starts before previous ends
+                    if (curr.StartSlot < prev.EndSlot)
+                        yield return new ValidationResult($"Shift[{i}] Role segments overlap.");
                 }
             }
         }
-        // NEW: prevent 2 shifts with same EmployeeId in the same save payload
+
+        // Prevent 2 shifts with same EmployeeId in the same save payload
         var dupEmployeeIds = Shifts
             .GroupBy(s => s.EmployeeId)
             .Where(g => g.Count() > 1)
@@ -44,10 +84,11 @@ public sealed class SaveRosterRequest : IValidatableObject
             );
         }
 
-        // Duplicate ExternalShiftId in the same payload
+        // Duplicate ExternalShiftId in the same payload (trim + ignore empty)
         var dupExternalIds = Shifts
-            .Where(s => !string.IsNullOrWhiteSpace(s.ExternalShiftId))
-            .GroupBy(s => s.ExternalShiftId.Trim())
+            .Select(s => (s.ExternalShiftId ?? "").Trim())
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .GroupBy(x => x, StringComparer.OrdinalIgnoreCase)
             .Where(g => g.Count() > 1)
             .Select(g => g.Key)
             .ToList();
@@ -60,4 +101,5 @@ public sealed class SaveRosterRequest : IValidatableObject
             );
         }
     }
+
 }

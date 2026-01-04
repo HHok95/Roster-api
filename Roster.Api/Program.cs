@@ -28,7 +28,7 @@ builder.Services.ConfigureApplicationCookie(opt =>
 {
     opt.Cookie.Name = "roster.session";
     opt.Cookie.HttpOnly = true;
-    opt.Cookie.SameSite = SameSiteMode.Lax;
+    opt.Cookie.SameSite = SameSiteMode.None;
 
     // Dev-friendly: allow HTTP if you ever hit HTTP locally
     opt.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
@@ -53,7 +53,7 @@ builder.Services.AddAntiforgery(options =>
 {
     options.Cookie.Name = "XSRF-TOKEN";
     options.Cookie.HttpOnly = false; // so frontend/Swagger can read it
-    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SameSite = SameSiteMode.None;
     options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
         ? CookieSecurePolicy.SameAsRequest
         : CookieSecurePolicy.Always;
@@ -63,6 +63,21 @@ builder.Services.AddAntiforgery(options =>
 builder.Services.AddScoped<ValidateCsrfFilter>();
 
 builder.Services.AddScoped<RosterService>();
+
+const string CorsPolicyName = "Frontend";
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(CorsPolicyName, policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:3000")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
+
 
 
 var app = builder.Build();
@@ -84,6 +99,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Cors
+app.UseCors(CorsPolicyName);
 
 // Auth middleware
 app.UseAuthentication();

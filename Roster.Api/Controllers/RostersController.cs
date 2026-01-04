@@ -65,8 +65,8 @@ public class RostersController : ControllerBase
                 s.EmployeeId,
                 s.StartSlot,
                 s.EndSlot,
-                JsonSerializer.Deserialize<object>(s.BreaksJson) ?? new object[0],
-                JsonSerializer.Deserialize<object>(s.RolesJson) ?? new object[0]
+                JsonSerializer.Deserialize<List<BreakDto>>(s.BreaksJson) ?? new(),
+                JsonSerializer.Deserialize<List<RoleDto>>(s.RolesJson) ?? new()
             ))
             .ToList();
 
