@@ -10,6 +10,9 @@
       "Microsoft.EntityFrameworkCore": "Warning"
     }
   },
+  "Cors": {
+    "AllowedOrigins": "http://localhost:3000"
+  },
   "Jwt": {
     "SecretKey": "YOUR_SECRET_KEY_MINIMUM_32_CHARACTERS_LONG_CHANGE_THIS",
     "Issuer": "RosterApi",
