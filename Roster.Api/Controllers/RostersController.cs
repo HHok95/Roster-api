@@ -7,7 +7,6 @@ using Microsoft.EntityFrameworkCore;
 using Roster.Api.Data;
 using Roster.Api.Dtos.Rosters;
 using Roster.Api.Models;
-using Roster.Api.Security;
 using Roster.Api.Services;
 using Roster.Api.Utils;
 
@@ -83,7 +82,6 @@ public class RostersController : ControllerBase
 
     [HttpPut("{date}")]
     [Authorize(Roles = "Manager")]
-    [ValidateCsrf]
     public async Task<IActionResult> SaveByDate(string date, [FromBody] SaveRosterRequest req)
     {
         if (!DateOnly.TryParse(date, out var d))

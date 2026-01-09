@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -6,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 using Roster.Api.Data;
 using Roster.Api.Dtos;
 using Roster.Api.Models;
-using Roster.Api.Security;
 using Roster.Api.Utils;
 
 namespace Roster.Api.Controllers;
@@ -61,10 +59,9 @@ public class EmployeesController : ControllerBase
         return Ok(new EmployeeResponseDto(e.Id, e.DisplayName, e.IsActive));
     }
 
-    // ---------- Write endpoints (Manager + CSRF) ----------
+    // ---------- Write endpoints (Manager) ----------
     [HttpPost]
     [Authorize(Roles = "Manager")]
-    [ValidateCsrf]
     public async Task<IActionResult> Create([FromBody] CreateEmployeeRequestDto req)
     {
         var user = await CurrentUser.GetAsync(_users, User);
@@ -89,7 +86,6 @@ public class EmployeesController : ControllerBase
 
     [HttpPut("{id:guid}")]
     [Authorize(Roles = "Manager")]
-    [ValidateCsrf]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateEmployeeRequest req)
     {
         var user = await CurrentUser.GetAsync(_users, User);
@@ -109,7 +105,6 @@ public class EmployeesController : ControllerBase
     // Soft delete
     [HttpDelete("{id:guid}")]
     [Authorize(Roles = "Manager")]
-    [ValidateCsrf]
     public async Task<IActionResult> Deactivate(Guid id)
     {
         var user = await CurrentUser.GetAsync(_users, User);

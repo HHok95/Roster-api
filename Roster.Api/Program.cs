@@ -1,9 +1,10 @@
-using Microsoft.AspNetCore.Antiforgery;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Roster.Api.Data;
 using Roster.Api.Models;
-using Roster.Api.Security;
 using Roster.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,51 +18,64 @@ builder.Services.AddSwaggerGen();
 
 // Db
 builder.Services.AddDbContext<AppDbContext>(opt =>
+    // opt.UseSqlServer(builder.Configuration.GetConnectionString("AZURE_SQL_CONNECTIONSTRING")));
     opt.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
-// Identity (cookie auth)
+// Bind JWT settings
+builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
+
+// Identity (now using JWT, not cookies - but keep Identity for UserManager/RoleManager)
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
-builder.Services.ConfigureApplicationCookie(opt =>
+// JWT Authentication
+var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
+if (jwtSettings == null || string.IsNullOrEmpty(jwtSettings.SecretKey))
+    throw new InvalidOperationException("JWT settings not configured");
+
+builder.Services.AddAuthentication(options =>
 {
-    opt.Cookie.Name = "roster.session";
-    opt.Cookie.HttpOnly = true;
-    opt.Cookie.SameSite = SameSiteMode.None;
-
-    // Dev-friendly: allow HTTP if you ever hit HTTP locally
-    opt.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
-        ? CookieSecurePolicy.SameAsRequest
-        : CookieSecurePolicy.Always;
-
-    opt.Events.OnRedirectToLogin = ctx =>
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.SaveToken = true;
+    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
-        return Task.CompletedTask;
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtSettings.Issuer,
+        ValidAudience = jwtSettings.Audience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
+        ClockSkew = TimeSpan.Zero
     };
-    opt.Events.OnRedirectToAccessDenied = ctx =>
+
+    options.Events = new JwtBearerEvents
     {
-        ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
-        return Task.CompletedTask;
+        OnChallenge = context =>
+        {
+            context.HandleResponse();
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            context.Response.ContentType = "application/json";
+            return context.Response.WriteAsJsonAsync(new { message = "Unauthorized" });
+        },
+        OnForbidden = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            context.Response.ContentType = "application/json";
+            return context.Response.WriteAsJsonAsync(new { message = "Forbidden" });
+        }
     };
 });
 
 builder.Services.AddAuthorization();
 
-builder.Services.AddAntiforgery(options =>
-{
-    options.Cookie.Name = "XSRF-TOKEN";
-    options.Cookie.HttpOnly = false; // so frontend/Swagger can read it
-    options.Cookie.SameSite = SameSiteMode.None;
-    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
-        ? CookieSecurePolicy.SameAsRequest
-        : CookieSecurePolicy.Always;
-    options.HeaderName = "X-XSRF-TOKEN"; // header you must send on writes
-});
-
-builder.Services.AddScoped<ValidateCsrfFilter>();
-
+builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<RosterService>();
 
 const string CorsPolicyName = "Frontend";
@@ -77,6 +91,10 @@ builder.Services.AddCors(options =>
             .AllowCredentials();
     });
 });
+
+// EF Core Health Check
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<AppDbContext>("db");
 
 
 
@@ -107,14 +125,11 @@ app.UseCors(CorsPolicyName);
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGet("api/auth/csrf", (IAntiforgery antiforgery, HttpContext ctx) =>
-{
-    var tokens = antiforgery.GetAndStoreTokens(ctx);
-    return Results.Ok(new { token = tokens.RequestToken });
-});
-
 // Map controllers
 app.MapControllers();
+
+// Map health check endpoints
+app.MapHealthChecks("/health");
 
 await SeedAuthAsync(app);
 

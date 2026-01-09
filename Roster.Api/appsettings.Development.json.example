@@ -1,0 +1,20 @@
+{
+  "ConnectionStrings": {
+    "Default": "Server=localhost,1433;Database=RosterDb;User Id=sa;Password=YOUR_PASSWORD;TrustServerCertificate=True;",
+    "AZURE_SQL_CONNECTIONSTRING": "Data Source=YOUR_SERVER.database.windows.net;Initial Catalog=YOUR_DATABASE;Authentication=Active Directory Default;Encrypt=True;"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning",
+      "Microsoft.EntityFrameworkCore": "Warning"
+    }
+  },
+  "Jwt": {
+    "SecretKey": "YOUR_SECRET_KEY_MINIMUM_32_CHARACTERS_LONG_CHANGE_THIS",
+    "Issuer": "RosterApi",
+    "Audience": "RosterClient",
+    "AccessTokenExpiryMinutes": 480,
+    "RefreshTokenExpiryDays": 7
+  }
+}
