@@ -1,6 +1,7 @@
 using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
@@ -79,6 +80,17 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<RosterService>();
+
+// Data Protection - persist keys to Azure Blob Storage in production
+var dataProtection = builder.Services.AddDataProtection()
+    .SetApplicationName("Roster.Api");
+
+var blobConnectionString = builder.Configuration["DataProtection:BlobConnectionString"];
+var blobContainerName = builder.Configuration["DataProtection:BlobContainerName"] ?? "dataprotection";
+if (!string.IsNullOrEmpty(blobConnectionString))
+{
+    dataProtection.PersistKeysToAzureBlobStorage(blobConnectionString, blobContainerName, "keys.xml");
+}
 
 // Rate Limiting
 builder.Services.AddRateLimiter(options =>

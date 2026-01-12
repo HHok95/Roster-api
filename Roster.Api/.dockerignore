@@ -1,0 +1,55 @@
+# Build outputs
+bin/
+obj/
+out/
+
+# IDE and editor files
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# NuGet packages
+*.nupkg
+packages/
+
+# Test results
+TestResults/
+coverage/
+
+# Logs
+*.log
+logs/
+
+# Local environment files
+appsettings.Development.json
+appsettings.Local.json
+*.local.json
+
+# Secrets and env files
+secrets/
+*.pfx
+*.key
+.env
+.env.*
+!.env.example
+
+# Docker
+Dockerfile*
+docker-compose*
+.docker/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+LICENSE
+
+# Misc
+.DS_Store
+Thumbs.db
